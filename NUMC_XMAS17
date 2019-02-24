@@ -1,0 +1,52 @@
+#!/bin/sh
+DAY=$(date +%A)
+SERVICE="Christmas-Family"
+HOST="stream.nicholsumc.org"
+PWRD="NUMC35"
+
+
+if [ "$1" = "" ]
+then
+echo "No Pre-Entered Date!"
+if [ "$DAY" = "Sunday" ]
+       then
+DATE=$(date +%Y%m%d)
+else
+echo "Datestamp?"
+read DATE
+fi
+else
+echo using Pre-Entered Datestamp
+DATE=$1
+fi
+
+echo "[general]\nduration = 0\nbufferSecs = 1\nreconnect = yes\nrealtime = yes\nrtprio = 97\n[input]\ndevice = hw:0,0\npaSourceName = alsa_input.pci-0000_00_1b.0.analog-stereo\nsampleRate = 44100\nbitsPerSample = 16\nchannel = 2\n[icecast2-0]\nbitrateMode = vbr\nquality = 0.5\nformat = mp3\nbitrate = 64\nserver = "$HOST"\nport = 8000\npassword = "$PWRD"\nmountPoint = Live\ndescription = Nichols United Methodist Church Live Broadcast\ngenre = Religious Service\nurl = http://"$HOST"\npublic = yes\nname = NUMC_"$SERVICE"_"$DATE"\n[file-0]\nbitrateMode = vbr\nquality = 1.0\nformat = mp3\nbitrate = 256\nfileName = /NUMC/service/Full/"$SERVICE"/NUMC_"$SERVICE"_"$DATE".mp3" > /etc/darkice.cfg
+
+
+progID="darkice" # replace by your binary
+$progID -v5 2>&1 >> /var/log/darkice.log &
+mypid=`eval ps ax|grep "$progID"|grep -iv "grep"| awk '{print $1}'`
+echo "mypid $mypid"
+mins=0
+secs=0
+killmins=4500
+startsecs=`eval date +%-S `
+starthours=`eval date +%-H`
+startmins=`eval date +%-M`
+
+#echo "startsecs=$startsecs starthours=$starthours startmins=$startmins"
+
+while [ $secs -lt $killmins ]; do
+    cursecs=`eval date +%-S `
+    curhours=`eval date +%-H`
+    curmins=`eval date +%-M`
+    echo "Aval..."
+    secs=$(( (curhours-starthours)*3600 + (curmins-startmins)*60 - startsecs + cursecs ))
+    echo "Secs: $secs"
+    sleep 1
+done
+kill "$mypid"
+if [ $? -eq 0 ]; then
+    echo "Process $mypid was killed"
+fi
+chmod 644 /NUMC/service/Full/"$SERVICE"/NUMC_"$SERVICE"_"$DATE".mp3

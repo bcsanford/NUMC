@@ -1,0 +1,22 @@
+#!/bin/bash
+if [[ $(date +%u) -lt 6 ]] ; then
+Source=${1##*/}
+DIR=${1%/*}
+File=${Source%.*}
+CFolder=$DIR.Complete
+CFile=$File.Complete
+UFolder=$DIR.Upload
+UFile=$File.Upload
+Date=`echo $File|grep -Eo '[[:digit:]]{8}'`
+PDIR="$(dirname "$DIR")"
+EFolder=$PDIR/Youtube
+IName=/NUMC/www/display/Hold/NUMC-Building.png
+
+if [[ `file -b $DIR/$File.mp3` == "empty" ]]; then
+rm "$DIR/$File.mp3"
+elif [ ! -f "$CFolder/$CFile" ]; then
+[ -d "$CFolder" ] || mkdir "$CFolder"
+[ -d "$EFolder" ] || mkdir "$EFolder"
+ffmpeg -y -i "$DIR/$File.mp3" -loop 1 -r 2 -i $IName -c:a copy -c:v libx264 -movflags +faststart -crf 51 -preset ultrafast -shortest "$EFolder/$File.mp4" && touch "$CFolder/$CFile"
+fi
+fi
